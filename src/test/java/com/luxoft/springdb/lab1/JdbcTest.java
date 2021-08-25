@@ -1,35 +1,38 @@
 package com.luxoft.springdb.lab1;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import com.luxoft.springdb.lab1.dao.CountryDao;
+import com.luxoft.springdb.lab1.model.Country;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ContextConfiguration;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.*;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.luxoft.springdb.lab1.dao.CountryDao;
-import com.luxoft.springdb.lab1.model.Country;
-
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration("classpath:application-context.xml")
+@SpringBootTest
 public class JdbcTest{
 
 	@Autowired
 	private CountryDao countryDao;
+	@Autowired
+    private JdbcTemplate jdbcTemplate;
 	
     private List<Country> expectedCountryList = new ArrayList<Country>();
     private List<com.luxoft.springdb.lab1.model.Country> expectedCountryListStartsWithA = new ArrayList<Country>();
     private Country countryWithChangedName = new Country(1, "Russia", "RU");
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    public void init() throws Exception {
         initExpectedCountryLists();
+        jdbcTemplate.execute("create table country( id identity , name varchar (255) , code_name varchar (255) );");
         countryDao.loadCountries();
     }
 
