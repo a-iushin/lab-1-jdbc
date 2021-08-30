@@ -1,43 +1,50 @@
 package com.luxoft.springdb.lab1;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import com.luxoft.springdb.lab1.dao.CountryDao;
+import com.luxoft.springdb.lab1.model.Country;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.*;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.luxoft.springdb.lab1.dao.CountryDao;
-import com.luxoft.springdb.lab1.model.Country;
+@SpringBootTest
+public class JdbcTest {
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration("classpath:application-context.xml")
-public class JdbcTest{
+    @Autowired
+    private CountryDao countryDao;
 
-	@Autowired
-	private CountryDao countryDao;
-	
-    private List<Country> expectedCountryList = new ArrayList<Country>();
-    private List<com.luxoft.springdb.lab1.model.Country> expectedCountryListStartsWithA = new ArrayList<Country>();
-    private Country countryWithChangedName = new Country(1, "Russia", "RU");
+    public final String[][] COUNTRY_INIT_DATA = {{"Australia", "AU"},
+            {"Canada", "CA"}, {"France", "FR"}, {"Hong Kong", "HK"},
+            {"Iceland", "IC"}, {"Japan", "JP"}, {"Nepal", "NP"},
+            {"Russian Federation", "RU"}, {"Sweden", "SE"},
+            {"Switzerland", "CH"}, {"United Kingdom", "GB"},
+            {"United States", "US"}};
 
-    @Before
+    private final List<Country> expectedCountryList = new ArrayList<Country>();
+    private final List<com.luxoft.springdb.lab1.model.Country> expectedCountryListStartsWithA = new ArrayList<Country>();
+    private final Country countryWithChangedName = new Country("Russia", "RU");
+
+    @BeforeEach
     public void setUp() throws Exception {
         initExpectedCountryLists();
-        countryDao.loadCountries();
+        for (String[] country : COUNTRY_INIT_DATA) {
+            Country c = new Country(country[0], country[1]);
+            countryDao.save(c);
+        }
     }
 
-    
+
     @Test
     @DirtiesContext
     public void testCountryList() {
-        List<Country> countryList = countryDao.getCountryList();
+        List<Country> countryList = (List<Country>) countryDao.findAll();
         assertNotNull(countryList);
         assertEquals(expectedCountryList.size(), countryList.size());
         for (int i = 0; i < expectedCountryList.size(); i++) {
@@ -48,7 +55,7 @@ public class JdbcTest{
     @Test
     @DirtiesContext
     public void testCountryListStartsWithA() {
-        List<Country> countryList = countryDao.getCountryListStartWith("A");
+        List<Country> countryList = countryDao.findAllByNameStartingWith("A");
         assertNotNull(countryList);
         assertEquals(expectedCountryListStartsWithA.size(), countryList.size());
         for (int i = 0; i < expectedCountryListStartsWithA.size(); i++) {
@@ -59,18 +66,19 @@ public class JdbcTest{
     @Test
     @DirtiesContext
     public void testCountryChange() {
-        countryDao.updateCountryName("RU", "Russia");
-        assertEquals(countryWithChangedName, countryDao.getCountryByCodeName("RU"));
+        Country ru = countryDao.findCountryByCodeName("RU");
+        ru.setName("Russia");
+        countryDao.save(ru);
+        assertEquals(countryWithChangedName, countryDao.findCountryByCodeName("RU"));
     }
 
     private void initExpectedCountryLists() {
-         for (int i = 0; i < CountryDao.COUNTRY_INIT_DATA.length; i++) {
-             String[] countryInitData = CountryDao.COUNTRY_INIT_DATA[i];
-             Country country = new Country(i, countryInitData[0], countryInitData[1]);
-             expectedCountryList.add(country);
-             if (country.getName().startsWith("A")) {
-                 expectedCountryListStartsWithA.add(country);
-             }
-         }
-     }
+        for (String[] countryInitData : COUNTRY_INIT_DATA) {
+            Country country = new Country(countryInitData[0], countryInitData[1]);
+            expectedCountryList.add(country);
+            if (country.getName().startsWith("A")) {
+                expectedCountryListStartsWithA.add(country);
+            }
+        }
+    }
 }
