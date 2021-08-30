@@ -7,9 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface CountryDao extends CrudRepository<Country, Long> {
-
-
+public interface CountryRepository extends CrudRepository<Country, Long> {
 
     List<Country> findAllByNameStartingWith(String starts);
 

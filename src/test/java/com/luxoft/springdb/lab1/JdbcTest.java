@@ -1,6 +1,6 @@
 package com.luxoft.springdb.lab1;
 
-import com.luxoft.springdb.lab1.dao.CountryDao;
+import com.luxoft.springdb.lab1.dao.CountryRepository;
 import com.luxoft.springdb.lab1.model.Country;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class JdbcTest {
 
     @Autowired
-    private CountryDao countryDao;
+    private CountryRepository countryDao;
 
     public final String[][] COUNTRY_INIT_DATA = {{"Australia", "AU"},
             {"Canada", "CA"}, {"France", "FR"}, {"Hong Kong", "HK"},
