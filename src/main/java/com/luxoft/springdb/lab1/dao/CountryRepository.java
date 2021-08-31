@@ -11,6 +11,9 @@ public interface CountryRepository extends CrudRepository<Country, Long> {
 
     List<Country> findAllByNameStartingWith(String starts);
 
+    Country findCountryByName(String name);
+
     Country findCountryByCodeName(String codeName);
 
+    Country findCountryByNameAndCodeName(String name, String codeName);
 }
