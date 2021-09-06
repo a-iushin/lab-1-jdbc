@@ -3,21 +3,25 @@ package com.luxoft.springdb.lab1.dao;
 import com.luxoft.springdb.lab1.model.Country;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 @Service
 public class CountryDao {
-    private static final String LOAD_COUNTRIES_SQL = "insert into country (name, code_name) values ";
+    private static final String LOAD_COUNTRIES_SQL = "insert into country (name, code_name) values (?,?)";
 
     private static final String GET_ALL_COUNTRIES_SQL = "select * from country";
-    private static final String GET_COUNTRIES_BY_NAME_SQL = "select * from country where name like ?";
-    private static final String GET_COUNTRY_BY_NAME_SQL = "select * from country where name = '";
-    private static final String GET_COUNTRY_BY_CODE_NAME_SQL = "select * from country where code_name = '";
+    private static final String GET_COUNTRIES_BY_NAME_SQL = "select * from country where name like :name";
+    private static final String GET_COUNTRY_BY_NAME_SQL = "select * from country where name = :name";
+    private static final String GET_COUNTRY_BY_CODE_NAME_SQL = "select * from country where code_name = :codeName";
 
-    private static final String UPDATE_COUNTRY_NAME_SQL_1 = "update country SET name='";
-    private static final String UPDATE_COUNTRY_NAME_SQL_2 = " where code_name='";
+    private static final String UPDATE_COUNTRY_NAME_SQL = "update country SET name=:name where code_name=:codeName";
 
     public static final String[][] COUNTRY_INIT_DATA = {{"Australia", "AU"},
             {"Canada", "CA"}, {"France", "FR"}, {"Hong Kong", "HK"},
@@ -27,12 +31,13 @@ public class CountryDao {
             {"United States", "US"}};
 
     private static final CountryRowMapper COUNTRY_ROW_MAPPER = new CountryRowMapper();
-
-    private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate jdbcTemplate;
+    private final JdbcTemplate jdbc;
 
     @Autowired
-    public CountryDao(JdbcTemplate jdbcTemplate) {
+    public CountryDao(NamedParameterJdbcTemplate jdbcTemplate, JdbcTemplate jdbc) {
         this.jdbcTemplate = jdbcTemplate;
+        this.jdbc = jdbc;
     }
 
     public List<Country> getCountryList() {
@@ -40,33 +45,36 @@ public class CountryDao {
     }
 
     public List<Country> getCountryListStartWith(String name) {
-        return jdbcTemplate.query(GET_COUNTRIES_BY_NAME_SQL,
-                preparedStatement -> preparedStatement.setString(1, name + "%"), COUNTRY_ROW_MAPPER);
+        SqlParameterSource sqlParameterSource = new MapSqlParameterSource(
+                "name", name + "%");
+        return jdbcTemplate.query(GET_COUNTRIES_BY_NAME_SQL, sqlParameterSource, COUNTRY_ROW_MAPPER);
     }
 
     public void updateCountryName(String codeName, String newCountryName) {
-        jdbcTemplate.execute(UPDATE_COUNTRY_NAME_SQL_1 + newCountryName + "'" + UPDATE_COUNTRY_NAME_SQL_2 + codeName + "'");
+        HashMap<String, String> parameters = new HashMap<>();
+        parameters.put("name", newCountryName);
+        parameters.put("codeName", codeName);
+        jdbcTemplate.update(UPDATE_COUNTRY_NAME_SQL, parameters);
     }
 
     public void loadCountries() {
-        for (String[] countryData : COUNTRY_INIT_DATA) {
-            String sql = LOAD_COUNTRIES_SQL + "('" + countryData[0] + "', '"
-                    + countryData[1] + "');";
-            jdbcTemplate.execute(sql);
-        }
+        List<Object[]> data = Arrays.asList(COUNTRY_INIT_DATA);
+        jdbc.batchUpdate(LOAD_COUNTRIES_SQL, data);
     }
 
     public Country getCountryByCodeName(String codeName) {
-        String sql = GET_COUNTRY_BY_CODE_NAME_SQL + codeName + "'";
-        return jdbcTemplate.query(sql, COUNTRY_ROW_MAPPER).get(0);
+        HashMap<String, String> params = new HashMap<>();
+        params.put("codeName", codeName);
+        return jdbcTemplate.query(GET_COUNTRY_BY_CODE_NAME_SQL, params, COUNTRY_ROW_MAPPER).get(0);
     }
 
     public Country getCountryByName(String name) throws CountryNotFoundException {
-        List<Country> countryList = jdbcTemplate.query(GET_COUNTRY_BY_NAME_SQL
-                + name + "'", COUNTRY_ROW_MAPPER);
-        if (countryList.isEmpty()) {
+        HashMap<String, String> params = new HashMap<>();
+        params.put("name", name);
+        Country country = jdbcTemplate.queryForObject(GET_COUNTRY_BY_NAME_SQL, params, COUNTRY_ROW_MAPPER);
+        if (country == null) {
             throw new CountryNotFoundException("Country not found");
         }
-        return countryList.get(0);
+        return country;
     }
 }
